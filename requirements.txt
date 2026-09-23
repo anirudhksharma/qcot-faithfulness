@@ -1,0 +1,6 @@
+# GPU run (Kaggle/Colab). CPU/GGUF fallback also needs llama-cpp-python.
+transformers>=4.44
+accelerate>=0.33
+bitsandbytes>=0.43
+datasets>=2.20
+matplotlib

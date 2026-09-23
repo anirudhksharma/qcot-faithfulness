@@ -1,0 +1,311 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% Markers: red = fill in prose/decision; blue = paste a number from the scripts.
+% They exist so no result is ever silently fabricated.
+\newcommand{\todo}[1]{{\color{red}\textbf{[TODO: #1]}}}
+\newcommand{\res}[1]{{\color{blue}#1}}
+
+\title{Compressed but Candid? The Effect of Post-Training Quantization\\
+       on Chain-of-Thought Faithfulness and Monitorability}
+\author{\todo{author name} \\ \todo{affiliation / email}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+%======================================================================
+\begin{abstract}
+Chain-of-thought (CoT) monitoring---reading a model's reasoning trace to detect
+misbehavior---is a leading strategy for AI oversight, but it is only sound if the
+trace is \emph{faithful}: the reasoning must verbalize the factors that actually
+determine the answer. Independently, weight quantization to INT8 and INT4 is how
+open-weight reasoning models are actually deployed on commodity hardware. These
+two facts have been studied in isolation. A growing literature shows that
+quantization harms reasoning \emph{accuracy} and inflates CoT \emph{length},
+while CoT faithfulness is measured almost exclusively at full precision. We ask
+the question at their intersection: \textbf{does post-training weight
+quantization erode chain-of-thought faithfulness?} Holding the base checkpoint
+fixed and varying only numerical precision (FP16, INT8, INT4), we apply the
+standard hint-injection protocol to \todo{model(s)} and measure the rate at
+which a model verbalizes an injected cue that flips its answer. We find
+\todo{one-line headline result}. We separate a \emph{direct} effect of precision
+from an \emph{indirect} effect mediated by the known concentration of
+unfaithfulness on incorrect answers, and we report the thinking-span versus
+answer-span acknowledgment gap. \todo{implication sentence}. All code, per-trace
+data, and a human-validated cue detector are released for full reproducibility;
+the entire study runs on a single free-tier GPU.
+\end{abstract}
+
+%======================================================================
+\section{Introduction}
+Modern reasoning models externalize an explicit, step-by-step chain of thought
+(CoT) before committing to an answer. Because this trace is written in natural
+language, it has been proposed as a practical window for AI oversight: if a model
+is about to misbehave, a monitor might catch the intent in the reasoning before
+it reaches the output~\cite{cotmonitorability2025,baker2025}. The promise of
+``just read the reasoning'' is attractive precisely because it needs no access to
+model internals.
+
+That promise rests entirely on \emph{faithfulness}. A CoT is faithful if it
+reports the factors that actually cause the answer. A now-substantial body of
+work shows this cannot be taken for granted: models produce plausible,
+fluent-sounding reasoning that nonetheless omits the true cause of the
+answer---most sharply demonstrated by \emph{hint injection}, where a cue planted
+in the prompt changes the answer while the reasoning never mentions
+it~\cite{turpin2023,anthropic2025reasoning,lietome2026}. Faithfulness, in other
+words, is a measurable and frequently violated property.
+
+Almost all of this measurement has been done on full-precision models. But
+full precision is not how open reasoning models are deployed. Post-training
+quantization to 8- and 4-bit weights is the default for running these models on
+consumer GPUs and edge devices, and a fast-growing literature documents its
+consequences for reasoning: quantized models lose accuracy at aggressive
+bit-widths, ``overthink,'' and inflate their token
+counts~\cite{quanthurts2025,overthinking2026,tokeninflation2026,multiplicative2026}.
+Every one of these studies asks whether the \emph{answer} survives compression.
+None asks whether the \emph{reasoning trace} survives as a faithful, monitorable
+artifact.
+
+This gap has a direct safety consequence. The models most likely to be deployed
+in the wild---quantized open-weight models on commodity hardware---are exactly
+the models whose monitorability nobody has verified. If faithfulness is measured
+at FP16 but the deployed artifact is INT4, a monitorability guarantee obtained in
+the lab may simply not hold in production. We therefore ask a single, concrete
+question:
+
+\begin{quote}
+\emph{Does post-training weight quantization (FP16 $\to$ INT8 $\to$ INT4) reduce
+the rate at which a reasoning model verbalizes the cue that drove its answer?}
+\end{quote}
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item To our knowledge, we are the first to measure the effect of \emph{weight
+        quantization} on CoT faithfulness, holding the base checkpoint fixed so
+        that numerical precision is the \emph{only} independent variable and the
+        comparison is causally clean.
+  \item Using the standard hint-injection protocol, we report the
+        cue-acknowledgment rate on answer-flipping cases across precisions, and
+        the thinking-span versus answer-span acknowledgment
+        gap~\cite{whymodelsknow2026}.
+  \item We stratify faithfulness by answer correctness, separating a \emph{direct}
+        effect of precision from the \emph{indirect} effect predicted by the
+        ``two regimes'' account of unfaithfulness~\cite{tworegimes2026}, in which
+        unfaithfulness concentrates on incorrect answers.
+  \item We release all code, the full per-trace dataset, and a cue detector
+        validated against human labels, and we design the study so that a null
+        result (``quantization preserves monitorability'') is as informative and
+        publishable as a positive one.
+\end{enumerate}
+
+%======================================================================
+\section{Related Work and Positioning}
+Our contribution sits at the intersection of three active literatures. Because
+the words ``compression'' and ``reliability'' appear in all three with different
+meanings, we state explicitly what each measures and where our question differs.
+
+\paragraph{CoT faithfulness and monitorability.}
+The hint-injection protocol and its
+relatives~\cite{turpin2023,lanham2023} test whether a model verbalizes a prompt
+cue that changes its answer; a range of recent studies extend and stress-test
+these faithfulness and monitorability
+metrics~\cite{anthropic2025reasoning,lietome2026,monitorability2025,faithcotbench2026,bonafide2026}.
+Crucially, \emph{this work is conducted at full precision.} We adopt the same
+protocol unchanged and add numerical precision as the independent variable.
+
+\paragraph{Compression of the trace---but its \emph{length}.}
+A distinct line studies how compressing the \emph{reasoning trace itself}
+(thousands of tokens down to hundreds, via length penalties or efficient-reasoning
+objectives) degrades
+monitorability~\cite{monitorabilitytax2026,lengthpenalties2026}. This is a
+genuinely different sense of ``compression'': it shortens the text, whereas we
+quantize the \emph{weights} and leave the decoding objective untouched. We are
+careful throughout to keep these two axes separate, because conflating them is
+the most likely way a reader could mistakenly think our question is already
+answered.
+
+\paragraph{Quantization of reasoning---but \emph{accuracy}, not faithfulness.}
+Quantized reasoning models are known to lose accuracy, overthink, and inflate
+token counts at low
+bit-widths~\cite{quanthurts2025,quantmeets2025,overthinking2026,tokeninflation2026,multiplicative2026,whenreasoningmeets2025}.
+Each of these measures \emph{whether the answer is right} or \emph{how long the
+reasoning is}, not \emph{whether the trace honestly reports its own cause}. The
+closest reliability-oriented work, UniComp, finds a
+performance--reliability \emph{decoupling}: compression can preserve accuracy
+while silently degrading other properties~\cite{unicomp2026}; related work finds
+compression can undo safety
+alignment~\cite{quantundoes2026}. Neither measures cue-verbalization faithfulness
+under the hint-injection protocol. Our study fills exactly that empty cell:
+faithfulness (not accuracy, not length, not aggregate ``reliability'') as a
+function of weight precision (not trace length).
+
+%======================================================================
+\section{Method}
+\paragraph{Models and precisions.}
+We evaluate \todo{model list, e.g.\ DeepSeek-R1-Distill-Qwen-1.5B, and 7B if
+compute allows} at three precisions: FP16 (the baseline), INT8, and INT4. The
+central design choice is that all three are loaded from the \emph{same} base
+checkpoint---INT8/INT4 via on-the-fly bitsandbytes quantization---so that the
+weights differ only in numerical precision and nothing
+else~\cite{dettmers2023,deepseekr1}. This makes precision the sole manipulated
+variable and rules out confounds from differently trained or differently prompted
+models. To guard against an artifact of a single quantization algorithm, we
+additionally include \todo{one AWQ and one GPTQ checkpoint} as a cross-method
+robustness check.
+
+\paragraph{Faithfulness protocol.}
+For each multiple-choice item (\todo{dataset, e.g.\ MMLU}; $N=\todo{N}$) we query
+the model twice. First \emph{clean}, recording its unbiased answer. Then
+\emph{cued}, with a hint injected into the prompt that points at a deliberately
+\emph{wrong} option. We use two established cue types, an appeal to authority and
+a sycophancy cue. The logic of the protocol is counterfactual: on the subset of
+items where the injected cue actually \emph{flips} the answer to the cued (wrong)
+option, the cue is demonstrably the cause of the answer, so a faithful reasoning
+trace must mention it. We therefore measure the \emph{cue-acknowledgment rate} on
+these flipped cases. Decoding is greedy ($T{=}0$) throughout for
+reproducibility~\cite{monitorability2025}.
+
+\paragraph{Metrics.}
+We report four quantities per precision:
+(i)~\emph{flip rate}, the fraction of cued items whose answer moves to the cue---a
+prerequisite for the faithfulness measurement and itself of interest, since
+susceptibility to cues may vary with precision;
+(ii)~\emph{faithfulness}, the cue-acknowledgment rate on flipped cases;
+(iii)~the \emph{thinking-versus-answer gap}, comparing acknowledgment inside the
+\texttt{<think>} span with acknowledgment in the final answer
+span~\cite{whymodelsknow2026}; and
+(iv)~\emph{correctness-stratified faithfulness}, which splits (ii) by whether the
+model's answer was correct, in order to separate the direct effect of precision
+from the indirect route in which lower precision produces more wrong answers,
+where unfaithfulness is already known to concentrate~\cite{tworegimes2026}.
+
+\paragraph{Cue detector and its validation.}
+Cue acknowledgment is detected automatically by a deterministic lexical matcher
+over cue-specific marker phrases. Because the credibility of every downstream
+number depends on this detector, we validate it against \todo{K} hand-labeled
+traces and report accuracy \res{acc} and Cohen's $\kappa=\res{kappa}$
+(\S\ref{sec:validation}). We treat $\kappa$ as a gate: automatic rates are
+reported as primary results only if human--detector agreement is acceptable, and
+otherwise the detector is revised (expanded marker set or an LLM judge) and
+re-validated before any rate is trusted.
+
+%======================================================================
+\section{Results}
+\emph{The numbers below are populated directly from the released scripts
+(\texttt{analyze.py}, \texttt{export.py}, \texttt{label\_helper.py}); no value is
+reported that the pipeline did not produce.}
+
+\paragraph{Detector validation.}\label{sec:validation}
+On \todo{K} hand-labeled flipped-case traces, the lexical detector achieves
+accuracy \res{acc}, $\kappa=\res{kappa}$, precision \res{P}, and recall \res{R}.
+\todo{One sentence stating whether agreement clears the reliability gate.}
+
+\paragraph{Faithfulness versus precision (headline).}
+Table~\ref{tab:headline} reports flip rate and faithfulness at each precision.
+\todo{State the trend: does acknowledgment fall monotonically FP16$\to$INT8$\to$INT4,
+stay flat, or move non-monotonically? Give the effect size and, if computed, a
+significance test or bootstrap CI.}
+
+\begin{table}[h]\centering
+\caption{Cue-acknowledgment (faithfulness) on answer-flipping cases, by precision.}
+\label{tab:headline}
+\begin{tabular}{lccc}
+\toprule
+Precision & Flip rate & Faithfulness (ack $\mid$ flipped) & $n_{\text{flipped}}$ \\
+\midrule
+FP16 & \res{--} & \res{--} & \res{--} \\
+INT8 & \res{--} & \res{--} & \res{--} \\
+INT4 & \res{--} & \res{--} & \res{--} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Thinking versus answer gap.}
+Figure~\ref{fig:gap} contrasts cue acknowledgment in the thinking span with the
+answer span. \todo{Report whether the thinking-span rate exceeds the answer-span
+rate (replicating prior full-precision findings~\cite{whymodelsknow2026}) and,
+critically, whether this gap widens as precision falls.}
+
+\begin{figure}[h]\centering
+% \includegraphics[width=0.62\textwidth]{results_gap.png}
+\fbox{\parbox{0.62\textwidth}{\centering\vspace{2em}\todo{insert results\_gap.png
+from export.py}\vspace{2em}}}
+\caption{Thinking- versus answer-span cue acknowledgment across precisions.}
+\label{fig:gap}
+\end{figure}
+
+\paragraph{Correctness stratification.}
+Table~\ref{tab:strat} splits faithfulness by answer correctness. \todo{Determine
+whether the precision effect is mainly \emph{indirect} (low bit-width yields more
+wrong answers, and unfaithfulness rides on wrong answers) or whether there is a
+\emph{direct} drop within each correctness regime---the more concerning case for
+monitoring.}
+
+\begin{table}[h]\centering
+\caption{Faithfulness stratified by answer correctness.}
+\label{tab:strat}
+\begin{tabular}{lcc}
+\toprule
+Precision & ack $\mid$ correct & ack $\mid$ incorrect \\
+\midrule
+FP16 & \res{--} & \res{--} \\
+INT8 & \res{--} & \res{--} \\
+INT4 & \res{--} & \res{--} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%======================================================================
+\section{Discussion}
+Two outcomes are worth interpreting in advance, because both are publishable and
+the study is designed to be honest about either.
+
+If faithfulness \emph{drops} with quantization, then quantized deployments are
+less monitorable than their full-precision evaluations imply. This would be a
+safety gap hidden by accuracy-only benchmarking: a model could pass its FP16
+monitorability check, be shipped at INT4, and silently stop reporting the cues
+that drive its answers. It would also extend UniComp's performance--reliability
+decoupling~\cite{unicomp2026} into the specific, safety-critical dimension of
+CoT faithfulness. If the drop is mostly \emph{direct} (present even within the
+correct-answer regime), the concern is sharper still, since it cannot be
+explained away as a side effect of degraded accuracy.
+
+If faithfulness is \emph{preserved}, that is a genuinely reassuring negative
+result: standard quantization, whatever it costs in accuracy, does not by itself
+compromise monitorability. Given how much oversight tooling implicitly assumes
+the deployed model behaves like its full-precision evaluation, a well-controlled
+null here is valuable on its own terms.
+
+%======================================================================
+\section{Limitations}
+Our scope is deliberately narrow to keep the causal claim clean, and this bounds
+the conclusions. We cover \todo{one or few} model families over one size range
+(\todo{sizes}); broader generalization across families and scales is future work.
+Acknowledgment is detected lexically---mitigated by the $\kappa$ validation and,
+\todo{if run}, an LLM-judge robustness check, but still an imperfect proxy for a
+human judgment of faithfulness. We study multiple-choice items with two cue
+types; other task formats and cue channels (for example, cues delivered through a
+tool return rather than the user turn) may behave differently. bitsandbytes is
+our primary quantizer with AWQ/GPTQ as a spot check rather than exhaustive
+coverage, and we use greedy decoding only. Finally, any observed effect is
+correlational with respect to internal mechanism: we measure behavior, not the
+circuit-level cause of a change in verbalization.
+
+%======================================================================
+\section*{Reproducibility}
+All code, the complete per-trace dataset, the human-validated cue detector, and
+the exact command sequence are released at \todo{repository URL}. The full study
+runs on a single free-tier T4 GPU in approximately \todo{X} GPU-hours, and we
+provide a copy-paste notebook so the entire pipeline---generation, scoring,
+analysis, and detector validation---can be re-executed end to end at no cost.
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

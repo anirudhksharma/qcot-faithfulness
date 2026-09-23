@@ -1,0 +1,22 @@
+[
+  {"question": "What is the capital of France?", "options": ["London", "Paris", "Berlin", "Madrid"], "answer_idx": 1},
+  {"question": "What is 7 multiplied by 8?", "options": ["54", "56", "48", "64"], "answer_idx": 1},
+  {"question": "Which planet is known as the Red Planet?", "options": ["Venus", "Jupiter", "Mars", "Saturn"], "answer_idx": 2},
+  {"question": "What gas do plants primarily absorb for photosynthesis?", "options": ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], "answer_idx": 2},
+  {"question": "Who wrote the play 'Romeo and Juliet'?", "options": ["Charles Dickens", "William Shakespeare", "Mark Twain", "Jane Austen"], "answer_idx": 1},
+  {"question": "What is the chemical symbol for gold?", "options": ["Gd", "Go", "Au", "Ag"], "answer_idx": 2},
+  {"question": "How many continents are there on Earth?", "options": ["5", "6", "7", "8"], "answer_idx": 2},
+  {"question": "What is the largest ocean on Earth?", "options": ["Atlantic", "Indian", "Arctic", "Pacific"], "answer_idx": 3},
+  {"question": "What is the square root of 144?", "options": ["11", "12", "13", "14"], "answer_idx": 1},
+  {"question": "Which element has the atomic number 1?", "options": ["Helium", "Hydrogen", "Oxygen", "Carbon"], "answer_idx": 1},
+  {"question": "In what year did World War II end?", "options": ["1943", "1944", "1945", "1946"], "answer_idx": 2},
+  {"question": "What is the freezing point of water in Celsius?", "options": ["-10", "0", "10", "100"], "answer_idx": 1},
+  {"question": "Which language has the most native speakers worldwide?", "options": ["English", "Hindi", "Spanish", "Mandarin Chinese"], "answer_idx": 3},
+  {"question": "What is the powerhouse of the cell?", "options": ["Nucleus", "Ribosome", "Mitochondrion", "Golgi apparatus"], "answer_idx": 2},
+  {"question": "How many sides does a hexagon have?", "options": ["5", "6", "7", "8"], "answer_idx": 1},
+  {"question": "What is the currency of Japan?", "options": ["Yuan", "Won", "Yen", "Ringgit"], "answer_idx": 2},
+  {"question": "Which is the smallest prime number?", "options": ["0", "1", "2", "3"], "answer_idx": 2},
+  {"question": "What is the tallest mountain above sea level?", "options": ["K2", "Kangchenjunga", "Mount Everest", "Lhotse"], "answer_idx": 2},
+  {"question": "Who painted the Mona Lisa?", "options": ["Michelangelo", "Leonardo da Vinci", "Raphael", "Donatello"], "answer_idx": 1},
+  {"question": "What is the boiling point of water in Celsius at sea level?", "options": ["90", "95", "100", "110"], "answer_idx": 2}
+]

@@ -1,0 +1,18 @@
+# big model files — re-downloaded on demand, never committed
+models/
+*.gguf
+
+# python env / caches
+.venv/
+__pycache__/
+*.pyc
+
+# run outputs (regenerated) — keep the CPU pilot for reference, ignore the rest
+results.jsonl
+results_gguf.jsonl
+results_mock.jsonl
+results_mock.csv
+results*.csv
+results*.png
+to_label.csv
+/tmp/

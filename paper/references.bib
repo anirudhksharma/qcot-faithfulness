@@ -1,0 +1,189 @@
+% References for the quantization x CoT-faithfulness paper.
+% All entries below correspond to real papers surfaced during the novelty
+% search. arXiv IDs are as found; VERIFY each ID/venue before submission
+% (some are very recent preprints and venue/year may update).
+
+% ---------- Faithfulness: foundations ----------
+@article{turpin2023,
+  title  = {Language Models Don't Always Say What They Think:
+            Unfaithful Explanations in Chain-of-Thought Prompting},
+  author = {Turpin, Miles and Michael, Julian and Perez, Ethan and Bowman, Samuel R.},
+  journal= {arXiv preprint arXiv:2305.04388},
+  year   = {2023}
+}
+
+@misc{anthropic2025reasoning,
+  title  = {Reasoning Models Don't Always Say What They Think},
+  author = {{Anthropic}},
+  year   = {2025},
+  note   = {arXiv:2505.05410 / Anthropic research report}
+}
+
+@article{lanham2023,
+  title  = {Measuring Faithfulness in Chain-of-Thought Reasoning},
+  author = {Lanham, Tamera and others},
+  journal= {Anthropic technical report},
+  year   = {2023}
+}
+
+% ---------- Faithfulness / monitorability: recent ----------
+@article{lietome2026,
+  title  = {Lie to Me: How Faithful Is Chain-of-Thought Reasoning
+            in Open-Weight Reasoning Models?},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2603.22582},
+  year   = {2026}
+}
+
+@article{tworegimes2026,
+  title  = {Two Regimes of Chain-of-Thought Unfaithfulness:
+            Metric-Based Detection Fails Where Models Are Wrong},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2607.23458},
+  year   = {2026}
+}
+
+@article{whymodelsknow2026,
+  title  = {Why Models Know But Don't Say: Chain-of-Thought Faithfulness
+            Divergence Between Thinking Tokens and Answers in
+            Open-Weight Reasoning Models},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2603.26410},
+  year   = {2026}
+}
+
+@article{monitorability2025,
+  title  = {Measuring Chain-of-Thought Monitorability Through
+            Faithfulness and Verbosity},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2510.27378},
+  year   = {2025}
+}
+
+@article{faithcotbench2026,
+  title  = {FaithCoT-Bench: Benchmarking Instance-Level Faithfulness
+            of Chain-of-Thought Reasoning},
+  author = {Anonymous},
+  journal= {ICLR},
+  year   = {2026}
+}
+
+@article{bonafide2026,
+  title  = {Faithfulness Metrics Don't Measure Faithfulness:
+            A Meta-Evaluation with Ground Truth (BonaFide)},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2605.25052},
+  year   = {2026}
+}
+
+@article{cotmonitorability2025,
+  title  = {Chain of Thought Monitorability: A New and Fragile
+            Opportunity for AI Safety},
+  author = {Korbak, Tomek and others},
+  journal= {arXiv preprint arXiv:2507.11473},
+  year   = {2025}
+}
+
+@article{baker2025,
+  title  = {Monitoring Reasoning Models for Misbehavior and the Risks
+            of Promoting Obfuscation},
+  author = {Baker, Bowen and others},
+  journal= {arXiv preprint arXiv:2503.11926},
+  year   = {2025}
+}
+
+% ---------- CoT-length compression vs monitorability (the OTHER compression) ----------
+@misc{monitorabilitytax2026,
+  title  = {The Monitorability Tax: How Compression Mechanism Shapes
+            Chain-of-Thought Monitorability},
+  author = {Anonymous},
+  year   = {2026},
+  note   = {OpenReview 5gGSX988EX}
+}
+
+@article{lengthpenalties2026,
+  title  = {Length Penalties Make Chain-of-Thought Less Monitorable},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2607.09786},
+  year   = {2026}
+}
+
+% ---------- Quantization x reasoning (accuracy / length, NOT faithfulness) ----------
+@article{quanthurts2025,
+  title  = {Quantization Hurts Reasoning? An Empirical Study on
+            Quantized Reasoning Models},
+  author = {Liu, Ruikang and others},
+  journal= {COLM; arXiv preprint arXiv:2504.04823},
+  year   = {2025}
+}
+
+@article{quantmeets2025,
+  title  = {Quantization Meets Reasoning: Exploring and Mitigating
+            Degradation of Low-Bit LLMs in Mathematical Reasoning},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2501.03035},
+  year   = {2025}
+}
+
+@article{overthinking2026,
+  title  = {Quantized Reasoning Models Think They Need to Overthink},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2606.00206},
+  year   = {2026}
+}
+
+@article{tokeninflation2026,
+  title  = {Quantization Inflates Reasoning: Token Inflation as a
+            Hidden Cost of Low-Bit Reasoning Models},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2606.25519},
+  year   = {2026}
+}
+
+@article{multiplicative2026,
+  title  = {Quantization Damage Is Multiplicative, Not Additive},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2608.06564},
+  year   = {2026}
+}
+
+% ---------- Compression x reliability / safety (differentiate from these) ----------
+@article{unicomp2026,
+  title  = {UniComp: A Unified Evaluation of Large Language Model
+            Compression via Pruning, Quantization, and Distillation},
+  author = {von Radziewsky, J. and others},
+  journal= {EMNLP; arXiv preprint arXiv:2602.09130},
+  year   = {2026}
+}
+
+@article{whenreasoningmeets2025,
+  title  = {When Reasoning Meets Compression: Understanding the Effects
+            of LLMs Compression on Large Reasoning Models},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2504.02010},
+  year   = {2025}
+}
+
+@article{quantundoes2026,
+  title  = {Quantization Undoes Alignment: Bias Emergence in
+            Compressed LLMs},
+  author = {Anonymous},
+  journal= {arXiv preprint arXiv:2605.15208},
+  year   = {2026}
+}
+
+% ---------- Tooling / models ----------
+@article{deepseekr1,
+  title  = {DeepSeek-R1: Incentivizing Reasoning Capability in LLMs
+            via Reinforcement Learning},
+  author = {{DeepSeek-AI}},
+  journal= {arXiv preprint arXiv:2501.12948},
+  year   = {2025}
+}
+
+@article{dettmers2023,
+  title  = {QLoRA: Efficient Finetuning of Quantized LLMs},
+  author = {Dettmers, Tim and Pagnoni, Artidoro and Holtzman, Ari and Zettlemoyer, Luke},
+  journal= {NeurIPS},
+  year   = {2023}
+}

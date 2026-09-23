@@ -1,0 +1,47 @@
+# Kaggle GPU run — quantization x CoT faithfulness
+#
+# HOW TO USE ON KAGGLE:
+#   1. kaggle.com -> New Notebook -> Settings -> Accelerator -> GPU T4 x2
+#   2. Paste each numbered cell below into a notebook cell and run in order.
+#   3. Total time ~30-60 min for the 1.5B across fp16/int8/int4 at limit 200.
+#
+# ------------------------------------------------------------------ CELL 1
+# Clone the code and install deps
+!git clone https://github.com/anirudhksharma/qcot-faithfulness.git
+%cd qcot-faithfulness
+!pip install -q -U transformers accelerate bitsandbytes datasets
+
+# ------------------------------------------------------------------ CELL 2
+# Bump generation length for reasoning traces (edit config in place)
+import re, pathlib
+cfg = pathlib.Path("config.py")
+cfg.write_text(re.sub(r"MAX_NEW_TOKENS = \d+", "MAX_NEW_TOKENS = 1024", cfg.read_text()))
+print("MAX_NEW_TOKENS set for GPU run")
+
+# ------------------------------------------------------------------ CELL 3
+# THE RUN: one base checkpoint at three precisions, real bitsandbytes.
+!python run_experiment.py \
+    --hf \
+    --model deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+    --precisions fp16 int8 int4 \
+    --dataset mmlu \
+    --limit 200 \
+    --out results.jsonl
+
+# ------------------------------------------------------------------ CELL 4
+# Analysis: the three faithfulness tables + CSV + plots
+!python analyze.py results.jsonl
+!python export.py  results.jsonl
+
+# ------------------------------------------------------------------ CELL 5
+# Make a labeling sheet to validate the cue-detector (do this before trusting rates)
+!python label_helper.py sample results.jsonl --n 60 --out to_label.csv
+# -> download to_label.csv, hand-label the human_label column (1/0), re-upload, then:
+# !python label_helper.py score to_label.csv
+
+# ------------------------------------------------------------------ NOTES
+# * Scale up: add 7B with `--model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B`;
+#   use only `--precisions int8 int4` if fp16 7B is tight on one T4 (or T4 x2).
+# * Everything writes incrementally to results.jsonl, so a disconnect loses
+#   only the in-flight item.
+# * Download results.jsonl + results.csv + the PNGs from the Output panel.
