@@ -16,7 +16,7 @@ class HFBackend:
 
         kwargs = {"device_map": "auto"}
         if precision == "fp16":
-            kwargs["torch_dtype"] = torch.float16
+            kwargs["dtype"] = torch.float16
         elif precision == "int8":
             kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
         elif precision == "int4":
@@ -34,16 +34,21 @@ class HFBackend:
     @torch.no_grad()
     def generate(self, prompt: str) -> str:
         messages = [{"role": "user", "content": prompt}]
-        inputs = self.tok.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt"
-        ).to(self.model.device)
+        # Newer transformers return a BatchEncoding (dict) here, older ones a
+        # bare tensor. return_dict=True normalizes to a dict we can **-unpack.
+        enc = self.tok.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            return_tensors="pt",
+            return_dict=True,
+        )
+        enc = {k: v.to(self.model.device) for k, v in enc.items()}
+        prompt_len = enc["input_ids"].shape[1]
         out = self.model.generate(
-            inputs,
+            **enc,
             max_new_tokens=config.MAX_NEW_TOKENS,
             do_sample=False,              # greedy, reproducible
-            temperature=None,
-            top_p=None,
             pad_token_id=self.tok.eos_token_id,
         )
-        text = self.tok.decode(out[0][inputs.shape[1]:], skip_special_tokens=True)
+        text = self.tok.decode(out[0][prompt_len:], skip_special_tokens=True)
         return text
